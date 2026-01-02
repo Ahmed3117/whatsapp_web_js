@@ -1,0 +1,97 @@
+<div class="mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">Rooms</a></li>
+            <li class="breadcrumb-item active">
+                <%= room.name %>
+            </li>
+        </ol>
+    </nav>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h2 class="card-title">
+                <%= room.name %>
+            </h2>
+            <p><strong>Token:</strong> <code><%= room.token %></code></p>
+            <p><strong>Website:</strong>
+                <%= room.website_url %>
+            </p>
+            <p><strong>Status:</strong> <span class="badge bg-<%= room.is_active ? 'success' : 'secondary' %>">
+                    <%= room.is_active ? 'Active' : 'Inactive' %>
+                </span></p>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>Senders</h3>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSenderModal">Add Sender</button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Phone Number</th>
+                    <th>Status</th>
+                    <th>Total Sent</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% senders.forEach(sender=> { %>
+                    <tr>
+                        <td>
+                            <%= sender.phone_number || 'Pending Auth' %>
+                        </td>
+                        <td>
+                            <% if (sender.is_active) { %>
+                                <span class="badge bg-success">Active</span>
+                                <% } else { %>
+                                    <span class="badge bg-danger">Inactive</span>
+                                    <% } %>
+                        </td>
+                        <td>
+                            <%= sender.total_sent %>
+                        </td>
+                        <td>
+                            <a href="/sender/<%= sender.id %>/qr" class="btn btn-sm btn-info" target="_blank">Scan
+                                QR</a>
+                            <form action="/sender/<%= sender.id %>/toggle" method="POST" class="d-inline">
+                                <button class="btn btn-sm btn-warning">
+                                    <%= sender.is_active ? 'Disable' : 'Enable' %>
+                                </button>
+                            </form>
+                            <form action="/sender/<%= sender.id %>/delete" method="POST" class="d-inline"
+                                onsubmit="return confirm('Are you sure?')">
+                                <button class="btn btn-sm btn-danger">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    <% }); %>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Sender Modal -->
+<div class="modal fade" id="addSenderModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="/room/<%= room.id %>/add-sender" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Sender</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>A new WhatsApp client instance will be created. You will need to scan the QR code to
+                        authenticate.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Add & Initialize</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

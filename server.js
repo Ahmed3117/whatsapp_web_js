@@ -2,7 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
-const { sequelize, Room, Sender, ProcessLog } = require('./database');
+const { sequelize, Room, Sender, ProcessLog, MessageLog } = require('./database');
 const clientManager = require('./clientManager');
 // const expressLayouts = require('express-ejs-layouts'); // Unused, using custom middleware 
 // Wait, I didn't install express-ejs-layouts. I'll stick to manual structure or simple res.render with layout option if I configured it, but standard ejs doesn't have layout by default.
@@ -225,11 +225,25 @@ async function processCustomMessages(room, senders, messages, delay, maxPerSende
                     await clientManager.sendMessage(sender.id, number, text);
                     console.log(`Success: Sent to ${number}`);
 
+                    await MessageLog.create({
+                        room_id: room.id,
+                        sender_id: sender.id,
+                        receiver_number: number,
+                        status: 'success'
+                    });
+
                     sender.total_sent += 1;
                     await sender.save();
                     sentCount++;
                 } catch (err) {
                     console.error(`Failed to send to ${number} via ${sender.id}:`, err.message);
+                    await MessageLog.create({
+                        room_id: room.id,
+                        sender_id: sender.id,
+                        receiver_number: number,
+                        status: 'failed',
+                        error_message: err.message
+                    });
                 }
 
                 msgIdx++;
@@ -291,6 +305,13 @@ async function processMessages(room, senders, receivers, delay, maxPerSender, me
                     await clientManager.sendMessage(sender.id, number, text);
                     console.log(`Success: Sent to ${number}`);
 
+                    await MessageLog.create({
+                        room_id: room.id,
+                        sender_id: sender.id,
+                        receiver_number: number,
+                        status: 'success'
+                    });
+
                     // Update stats
                     sender.total_sent += 1;
                     await sender.save();
@@ -298,6 +319,13 @@ async function processMessages(room, senders, receivers, delay, maxPerSender, me
                     sentCount++;
                 } catch (err) {
                     console.error(`Failed to send to ${number} via ${sender.id}:`, err.message);
+                    await MessageLog.create({
+                        room_id: room.id,
+                        sender_id: sender.id,
+                        receiver_number: number,
+                        status: 'failed',
+                        error_message: err.message
+                    });
                 }
 
                 receiverIdx++;
@@ -317,6 +345,50 @@ async function processMessages(room, senders, receivers, delay, maxPerSender, me
     await log.save();
     console.log('Process finished. Total sent:', sentCount);
 }
+
+// Room Analytics
+app.get('/room/:id/analytics', async (req, res) => {
+    const { id } = req.params;
+    const { start_date, end_date, sender_id } = req.query;
+    const room = await Room.findByPk(id);
+
+    if (!room) return res.status(404).send('Room not found');
+
+    const senders = await Sender.findAll({ where: { room_id: id } });
+
+    const { Op } = require('sequelize');
+    let whereClause = { room_id: id };
+
+    if (start_date || end_date) {
+        whereClause.timestamp = {};
+        if (start_date) {
+            whereClause.timestamp[Op.gte] = new Date(start_date);
+        }
+        if (end_date) {
+            const end = new Date(end_date);
+            end.setHours(23, 59, 59, 999);
+            whereClause.timestamp[Op.lte] = end;
+        }
+    }
+
+    if (sender_id) {
+        whereClause.sender_id = sender_id;
+    }
+
+    const logs = await MessageLog.findAll({
+        where: whereClause,
+        order: [['timestamp', 'DESC']],
+        include: [Sender]
+    });
+
+    const stats = {
+        total: logs.length,
+        success: logs.filter(l => l.status === 'success').length,
+        failed: logs.filter(l => l.status === 'failed').length
+    };
+
+    res.render('analytics', { room, logs, stats, start_date, end_date, sender_id, senders });
+});
 
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);

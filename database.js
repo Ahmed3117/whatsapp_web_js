@@ -78,6 +78,30 @@ const ProcessLog = sequelize.define('ProcessLog', {
     }
 });
 
+const MessageLog = sequelize.define('MessageLog', {
+    id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true
+    },
+    receiver_number: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    status: {
+        type: DataTypes.ENUM('success', 'failed'),
+        allowNull: false
+    },
+    error_message: {
+        type: DataTypes.TEXT,
+        allowNull: true
+    },
+    timestamp: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW
+    }
+});
+
 // Relationships
 Room.hasMany(Sender, { foreignKey: 'room_id' });
 Sender.belongsTo(Room, { foreignKey: 'room_id' });
@@ -85,9 +109,16 @@ Sender.belongsTo(Room, { foreignKey: 'room_id' });
 Room.hasMany(ProcessLog, { foreignKey: 'room_id' });
 ProcessLog.belongsTo(Room, { foreignKey: 'room_id' });
 
+Room.hasMany(MessageLog, { foreignKey: 'room_id' });
+MessageLog.belongsTo(Room, { foreignKey: 'room_id' });
+
+Sender.hasMany(MessageLog, { foreignKey: 'sender_id' });
+MessageLog.belongsTo(Sender, { foreignKey: 'sender_id' });
+
 module.exports = {
     sequelize,
     Room,
     Sender,
-    ProcessLog
+    ProcessLog,
+    MessageLog
 };

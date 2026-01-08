@@ -1,0 +1,117 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Analytics: <%= room.name %>
+    </h1>
+    <a href="/room/<%= room.id %>" class="btn btn-secondary">Back to Room</a>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <h5 class="card-title">Total Messages</h5>
+                <h2 class="card-text">
+                    <%= stats.total %>
+                </h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <h5 class="card-title">Success</h5>
+                <h2 class="card-text">
+                    <%= stats.success %>
+                </h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-danger">
+            <div class="card-body">
+                <h5 class="card-title">Failed</h5>
+                <h2 class="card-text">
+                    <%= stats.failed %>
+                </h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form action="/room/<%= room.id %>/analytics" method="GET" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Start Date</label>
+                <input type="date" name="start_date" class="form-control" value="<%= start_date %>">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">End Date</label>
+                <input type="date" name="end_date" class="form-control" value="<%= end_date %>">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Sender</label>
+                <select name="sender_id" class="form-control">
+                    <option value="">All Senders</option>
+                    <% senders.forEach(s=> { %>
+                        <option value="<%= s.id %>" <%=sender_id===s.id ? 'selected' : '' %>>
+                            <%= s.phone_number || s.client_id %>
+                        </option>
+                        <% }) %>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-success w-100">Filter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-white">
+        <h5 class="mb-0">Message Logs</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Sender (ID/Phone)</th>
+                        <th>Receiver</th>
+                        <th>Status</th>
+                        <th>Error (if any)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (logs.length===0) { %>
+                        <tr>
+                            <td colspan="5" class="text-center py-4">No logs found for this period.</td>
+                        </tr>
+                        <% } %>
+                            <% logs.forEach(log=> { %>
+                                <tr>
+                                    <td>
+                                        <%= new Date(log.timestamp).toLocaleString() %>
+                                    </td>
+                                    <td>
+                                        <%= log.Sender ? (log.Sender.phone_number || log.Sender.client_id) : 'Unknown'
+                                            %>
+                                    </td>
+                                    <td>
+                                        <%= log.receiver_number %>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-<%= log.status === 'success' ? 'success' : 'danger' %>">
+                                            <%= log.status.toUpperCase() %>
+                                        </span>
+                                    </td>
+                                    <td class="text-danger small">
+                                        <%= log.error_message || '-' %>
+                                    </td>
+                                </tr>
+                                <% }) %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

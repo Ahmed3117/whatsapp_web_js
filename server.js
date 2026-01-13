@@ -1,7 +1,8 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID } = require('crypto');
+const uuidv4 = randomUUID;
 const { sequelize, Room, Sender, ProcessLog, MessageLog } = require('./database');
 const clientManager = require('./clientManager');
 // const expressLayouts = require('express-ejs-layouts'); // Unused, using custom middleware 
